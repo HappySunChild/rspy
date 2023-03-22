@@ -1,3 +1,6 @@
+
+-- Objects
+
 local RemoteSpy = Instance.new("ScreenGui")
 local Main = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
@@ -401,6 +404,7 @@ local function LogRemote(remote: RemoteEvent|RemoteFunction, incoming: boolean, 
 	
 	Button.MouseButton1Click:Connect(function()
 		selectedRemote = remotes[remote]
+		
 		DisplaySource(remoteSource)
 	end)
 	
@@ -415,8 +419,6 @@ local function CaptureRemote(remote: RemoteEvent|RemoteFunction)
 	newRemote.Ignore = false
 	
 	remote.Destroying:Connect(function()
-		print("removed remote")
-		
 		remotes[remote] = nil
 	end)
 	
@@ -446,7 +448,7 @@ local function ScanForRemotes(instance)
 end
 
 local function ClearLogs()
-	for i, v in pairs({unpack(RemoteScroll:GetChildren()), unpack(Source:GetChildren())}) do
+	for i, v in pairs({unpack(RemoteScroll:GetChildren())}) do
 		if v:IsA("Frame") then
 			v:Destroy()
 		end
