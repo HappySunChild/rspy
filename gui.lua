@@ -171,6 +171,7 @@ local player = game:GetService("Players").LocalPlayer
 local highlight = loadstring(game:HttpGet("https://raw.githubusercontent.com/HappySunChild/Lua-RichText-Syntax-Highlighter/main/highlighter.lua"))()
 
 local TextService = game:GetService("TextService")
+local RunService = game:GetService("RunService")
 
 local function HasNonAlphanumericCharacter(str: string)
 	return (str:match("%c") or str:match("%p") or str:match("%s"))
@@ -236,6 +237,7 @@ types = {
 	end,
 }
 
+local queue = {}
 local remotes = {}
 local selectedRemote = nil
 local currentSource = ""
@@ -449,16 +451,22 @@ ScanRemotes.MouseButton1Click:Connect(ScanForRemotes)
 
 ScanForRemotes()
 
-local on_namecall = newcclosure(function(instance, ...)
+RunService.Stepped:Connect(function()
+	local remote = table.remove(queue, 1)
+	
+	CaptureRemote(remote.Remote)
+	LogRemote(remote.Remote, false, unpack(remote.Arguments))
+end)
+
+local on_namecall = function(instance, ...)
 	local method: string = getnamecallmethod()
 
 	if method:lower():match("server") then
-		CaptureRemote(instance)
-		LogRemote(instance, false, ...)
+		table.insert(queue, {Remote = instance, Arguments = {...}}) -- cant directly call CaptureRemote or LogRemote because this is ran within an environment that doesn't allow them
 	end
 
 	return gamemeta_namecall(instance, ...)
-end)
+end
 
 gamemeta.__namecall = on_namecall
 
