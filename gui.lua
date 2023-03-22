@@ -168,7 +168,7 @@ ScanRemotes.TextColor3 = Color3.fromRGB(245, 245, 245)
 ScanRemotes.TextSize = 14.000
 
 local player = game:GetService("Players").LocalPlayer
-local highlight = loadstring(game:HttpGet("https://raw.githubusercontent.com/HappySunChild/Lua-RichText-Syntax-Highlighter/main/highlighter.lua"))()
+local highlight = require(script:FindFirstChild("Highlighter"))
 
 local TextService = game:GetService("TextService")
 
@@ -445,17 +445,15 @@ ScanRemotes.MouseButton1Click:Connect(ScanForRemotes)
 
 ScanForRemotes()
 
-if hookmetamethod then
-	local old
-	old = hookmetamethod(game, "__namecall", newcclosure(function(instance, ...)
-		local method = getnamecallmethod()
-		
-		if instance:IsA("RemoteEvent") or instance:IsA("RemoteFunction") then
-			CaptureRemote(instance)
-		end
-		
-		return old(instance, ...)
-	end))
-end
+local old
+old = hookmetamethod(game, "__namecall", newcclosure(function(instance, ...)
+	local method: string = getnamecallmethod()
+	
+	if method:lower():match("server") then
+		CaptureRemote(instance)
+	end
+	
+	return old(instance, ...)
+end))
 
 return RemoteSpy
