@@ -332,7 +332,7 @@ local function SaveSourceToClipboard()
 	end
 end
 
-local function ExecuteSource()
+local function Execute()
 	pcall(function()
 		loadstring(currentSource)()
 	end)
@@ -454,7 +454,7 @@ local function ClearLogs()
 end
 
 CopySource.MouseButton1Click:Connect(SaveSourceToClipboard)
-ExecuteSource.MouseButton1Click:Connect(ExecuteSource)
+ExecuteSource.MouseButton1Click:Connect(Execute)
 ClearLog.MouseButton1Click:Connect(ClearLogs)
 ScanRemotes.MouseButton1Click:Connect(ScanForRemotes)
 
