@@ -452,10 +452,12 @@ ScanRemotes.MouseButton1Click:Connect(ScanForRemotes)
 ScanForRemotes()
 
 RunService.Stepped:Connect(function()
-	local remote = table.remove(queue, 1)
-	
-	CaptureRemote(remote.Remote)
-	LogRemote(remote.Remote, false, unpack(remote.Arguments))
+	while #queue > 0 do
+		local remote = table.remove(queue, 1)
+		
+		CaptureRemote(remote.Remote)
+		LogRemote(remote.Remote, false, unpack(remote.Arguments))
+	end
 end)
 
 local on_namecall = function(instance, ...)
