@@ -454,7 +454,7 @@ if hookmetamethod then
 			CaptureRemote(instance)
 		end
 		
-		return old
+		return old(instance, ...)
 	end))
 end
 
