@@ -11,10 +11,10 @@ local SourceList = Instance.new("UIListLayout")
 local Buttons = Instance.new("Frame")
 local ClearLog = Instance.new("TextButton")
 local ButtonList = Instance.new("UIListLayout")
-local GetReturn = Instance.new("TextButton")
-local FilterRemotes = Instance.new("TextButton")
 local CopySource = Instance.new("TextButton")
 local ScanRemotes = Instance.new("TextButton")
+local ExecuteSource = Instance.new("TextButton")
+local CatchIncoming = Instance.new("TextButton")
 
 RemoteSpy.Name = "RemoteSpy"
 RemoteSpy.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -123,33 +123,11 @@ ButtonList.FillDirection = Enum.FillDirection.Horizontal
 ButtonList.SortOrder = Enum.SortOrder.LayoutOrder
 ButtonList.Padding = UDim.new(0, 3)
 
-GetReturn.Name = "GetReturn"
---GetReturn.Parent = Buttons
-GetReturn.BackgroundColor3 = Color3.fromRGB(58, 58, 58)
-GetReturn.BorderSizePixel = 0
-GetReturn.LayoutOrder = 2
-GetReturn.Size = UDim2.new(0, 60, 1, 0)
-GetReturn.Font = Enum.Font.SourceSans
-GetReturn.Text = "Get Return"
-GetReturn.TextColor3 = Color3.fromRGB(245, 245, 245)
-GetReturn.TextSize = 14.000
-
-FilterRemotes.Name = "FilterRemotes"
---FilterRemotes.Parent = Buttons
-FilterRemotes.BackgroundColor3 = Color3.fromRGB(58, 58, 58)
-FilterRemotes.BorderSizePixel = 0
-FilterRemotes.LayoutOrder = 4
-FilterRemotes.Size = UDim2.new(0, 80, 1, 0)
-FilterRemotes.Font = Enum.Font.SourceSans
-FilterRemotes.Text = "Filter Remotes"
-FilterRemotes.TextColor3 = Color3.fromRGB(245, 245, 245)
-FilterRemotes.TextSize = 14.000
-
 CopySource.Name = "CopySource"
 CopySource.Parent = Buttons
 CopySource.BackgroundColor3 = Color3.fromRGB(58, 58, 58)
 CopySource.BorderSizePixel = 0
-CopySource.LayoutOrder = 5
+CopySource.LayoutOrder = 2
 CopySource.Size = UDim2.new(0, 70, 1, 0)
 CopySource.Font = Enum.Font.SourceSans
 CopySource.Text = "Copy Source"
@@ -160,12 +138,34 @@ ScanRemotes.Name = "ScanRemotes"
 ScanRemotes.Parent = Buttons
 ScanRemotes.BackgroundColor3 = Color3.fromRGB(58, 58, 58)
 ScanRemotes.BorderSizePixel = 0
-ScanRemotes.LayoutOrder = 5
+ScanRemotes.LayoutOrder = 4
 ScanRemotes.Size = UDim2.new(0, 65, 1, 0)
 ScanRemotes.Font = Enum.Font.SourceSans
 ScanRemotes.Text = "Scan Game"
 ScanRemotes.TextColor3 = Color3.fromRGB(245, 245, 245)
 ScanRemotes.TextSize = 14.000
+
+ExecuteSource.Name = "ExecuteSource"
+ExecuteSource.Parent = Buttons
+ExecuteSource.BackgroundColor3 = Color3.fromRGB(58, 58, 58)
+ExecuteSource.BorderSizePixel = 0
+ExecuteSource.LayoutOrder = 3
+ExecuteSource.Size = UDim2.new(0, 85, 1, 0)
+ExecuteSource.Font = Enum.Font.SourceSans
+ExecuteSource.Text = "Execute Source"
+ExecuteSource.TextColor3 = Color3.fromRGB(245, 245, 245)
+ExecuteSource.TextSize = 14.000
+
+CatchIncoming.Name = "CatchIncoming"
+CatchIncoming.Parent = Buttons
+CatchIncoming.BackgroundColor3 = Color3.fromRGB(58, 58, 58)
+CatchIncoming.BorderSizePixel = 0
+CatchIncoming.LayoutOrder = 4
+CatchIncoming.Size = UDim2.new(0, 105, 1, 0)
+CatchIncoming.Font = Enum.Font.SourceSans
+CatchIncoming.Text = "Incoming Requests"
+CatchIncoming.TextColor3 = Color3.fromRGB(255, 0, 0)
+CatchIncoming.TextSize = 14.000
 
 local player = game:GetService("Players").LocalPlayer
 local highlight = loadstring(game:HttpGet("https://raw.githubusercontent.com/HappySunChild/Lua-RichText-Syntax-Highlighter/main/highlighter.lua"))()
@@ -241,6 +241,8 @@ local queue = {}
 local remotes = {}
 local selectedRemote = nil
 local currentSource = ""
+
+local logIncoming = false
 
 local gamemeta = getrawmetatable(game)
 local gamemeta_namecall = gamemeta.__namecall
@@ -328,6 +330,12 @@ local function SaveSourceToClipboard()
 	if setclipboard and currentSource then
 		setclipboard(currentSource)
 	end
+end
+
+local function ExecuteSource()
+	pcall(function()
+		loadstring(currentSource)()
+	end)
 end
 
 local function GetMethod(remote: RemoteEvent|RemoteFunction, incoming: boolean?)
@@ -423,8 +431,6 @@ local function CaptureRemote(remote: RemoteEvent|RemoteFunction)
 	end
 	
 	remotes[remote] = newRemote
-	
-	warn(("Captured remote `%s` successfully"):format(GetPath(remote)))
 end
 
 local function ScanForRemotes(instance)
@@ -438,18 +444,25 @@ local function ScanForRemotes(instance)
 end
 
 local function ClearLogs()
-	for i, v in pairs(RemoteScroll:GetChildren()) do
+	for i, v in pairs({unpack(RemoteScroll:GetChildren()), unpack(Source:GetChildren())}) do
 		if v:IsA("Frame") then
 			v:Destroy()
 		end
 	end
+	
+	currentSource = ""
 end
 
 CopySource.MouseButton1Click:Connect(SaveSourceToClipboard)
+ExecuteSource.MouseButton1Click:Connect(ExecuteSource)
 ClearLog.MouseButton1Click:Connect(ClearLogs)
 ScanRemotes.MouseButton1Click:Connect(ScanForRemotes)
 
-ScanForRemotes()
+CatchIncoming.MouseButton1Click:Connect(function()
+	logIncoming = not logIncoming
+	
+	CatchIncoming.TextColor3 = logIncoming and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+end)
 
 RunService.Stepped:Connect(function()
 	while #queue > 0 do
@@ -463,7 +476,7 @@ end)
 local on_namecall = function(instance, ...)
 	local method: string = getnamecallmethod()
 
-	if method:lower():match("server") then
+	if method:lower():match("server") and logIncoming then
 		table.insert(queue, {Remote = instance, Arguments = {...}}) -- cant directly call CaptureRemote or LogRemote because this is ran within an environment that doesn't allow them
 	end
 
@@ -471,5 +484,7 @@ local on_namecall = function(instance, ...)
 end
 
 gamemeta.__namecall = on_namecall
+
+ScanForRemotes()
 
 return RemoteSpy
