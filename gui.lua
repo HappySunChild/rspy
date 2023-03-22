@@ -448,13 +448,11 @@ local function ScanForRemotes(instance)
 end
 
 local function ClearLogs()
-	for i, v in pairs({unpack(RemoteScroll:GetChildren())}) do
+	for i, v in pairs(RemoteScroll:GetChildren()) do
 		if v:IsA("Frame") then
 			v:Destroy()
 		end
 	end
-	
-	currentSource = ""
 end
 
 CopySource.MouseButton1Click:Connect(SaveSourceToClipboard)
