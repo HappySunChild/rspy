@@ -242,6 +242,11 @@ local remotes = {}
 local selectedRemote = nil
 local currentSource = ""
 
+local gamemeta = getrawmetatable(game)
+local gamemeta_namecall = gamemeta.__namecall
+
+setreadonly(gamemeta, false)
+
 local function GetTextBounds(text: string)
 	local params = Instance.new("GetTextBoundsParams")
 	params.Size = 14
@@ -450,11 +455,6 @@ ClearLog.MouseButton1Click:Connect(ClearLogs)
 ScanRemotes.MouseButton1Click:Connect(ScanForRemotes)
 
 ScanForRemotes()
-
-local gamemeta = getrawmetatable(game)
-local gamemeta_namecall = gamemeta.__namecall
-
-setreadonly(gamemeta, false)
 
 local on_namecall = function(instance, ...)
 	local method: string = getnamecallmethod()
