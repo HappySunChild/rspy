@@ -445,8 +445,10 @@ ScanRemotes.MouseButton1Click:Connect(ScanForRemotes)
 
 ScanForRemotes()
 
-local old
-old = hookmetamethod(game, "__namecall", function(instance, ...)
+local gamemeta = getrawmetatable(game)
+local gamemeta_namecall = gamemeta.__namecall
+
+hookmetamethod(game, "__namecall", function(instance, ...)
 	local method: string = getnamecallmethod()
 	
 	if method:lower():match("server") then
@@ -454,7 +456,7 @@ old = hookmetamethod(game, "__namecall", function(instance, ...)
 		LogRemote(instance, false, ...)
 	end
 	
-	return old(instance, ...)
+	return gamemeta_namecall(instance, ...)
 end)
 
 return RemoteSpy
