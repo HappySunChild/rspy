@@ -1,5 +1,3 @@
---!nonstrict
-
 local RemoteSpy = Instance.new("ScreenGui")
 local Main = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
@@ -331,7 +329,7 @@ local function SaveSourceToClipboard()
 end
 
 local function GetMethod(remote: RemoteEvent|RemoteFunction, incoming: boolean?)
-	return remote:IsA("RemoteEvent") and (incoming and "FireClient" or "FireServer") or (incoming and "InvokeClient" or "InvokeServer")
+	return remote.ClassName:lower() == "remoteevent" and (incoming and "FireClient" or "FireServer") or (incoming and "InvokeClient" or "InvokeServer")
 end
 
 local function LogRemote(remote: RemoteEvent|RemoteFunction, incoming: boolean, ...)
@@ -347,15 +345,12 @@ local function LogRemote(remote: RemoteEvent|RemoteFunction, incoming: boolean, 
 	
 	remoteSource = remoteSource .. string.format("\n \nlocal remote = %s\nremote:%s(%s)", GetPath(remote), GetMethod(remote, incoming), table.concat(args, ", "))
 	
-	print(remoteSource)
-	
-	local RemoteItem = Instance.new("Frame")
+	local RemoteItem = Instance.new("Frame", RemoteScroll)
 	local Image = Instance.new("ImageLabel")
 	local Button = Instance.new("TextButton")
 	local Index = Instance.new("TextLabel")
 
 	RemoteItem.Name = "RemoteItem"
-	RemoteItem.Parent = RemoteScroll
 	RemoteItem.BackgroundColor3 = Color3.fromRGB(44, 44, 44)
 	RemoteItem.BorderColor3 = Color3.fromRGB(79, 79, 79)
 	RemoteItem.Size = UDim2.new(1, 0, 0, 20)
@@ -366,7 +361,7 @@ local function LogRemote(remote: RemoteEvent|RemoteFunction, incoming: boolean, 
 	Image.BackgroundTransparency = 1.000
 	Image.BorderSizePixel = 0
 	Image.Size = UDim2.new(0, 20, 0, 20)
-	Image.Image = remote:IsA("RemoteEvent") and "rbxassetid://413369506" or "rbxassetid://413369623"
+	Image.Image = remote.ClassName:lower() == "remoteevent" and "rbxassetid://413369506" or "rbxassetid://413369623"
 	Image.ResampleMode = Enum.ResamplerMode.Pixelated
 
 	Button.Name = "Button"
