@@ -17,7 +17,6 @@ local ExecuteSource = Instance.new("TextButton")
 local CatchIncoming = Instance.new("TextButton")
 
 RemoteSpy.Name = "RemoteSpy"
-RemoteSpy.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 RemoteSpy.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 RemoteSpy.DisplayOrder = 1
 
