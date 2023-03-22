@@ -451,6 +451,7 @@ old = hookmetamethod(game, "__namecall", newcclosure(function(instance, ...)
 	
 	if method:lower():match("server") then
 		CaptureRemote(instance)
+		LogRemote(instance, false, ...)
 	end
 	
 	return old(instance, ...)
