@@ -168,7 +168,7 @@ ScanRemotes.TextColor3 = Color3.fromRGB(245, 245, 245)
 ScanRemotes.TextSize = 14.000
 
 local player = game:GetService("Players").LocalPlayer
-local highlight = require(script:FindFirstChild("Highlighter"))
+local highlight = loadstring(game:HttpGet("https://raw.githubusercontent.com/HappySunChild/Lua-RichText-Syntax-Highlighter/main/highlighter.lua"))()
 
 local TextService = game:GetService("TextService")
 
