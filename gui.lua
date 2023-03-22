@@ -1,3 +1,5 @@
+--!nonstrict
+
 local RemoteSpy = Instance.new("ScreenGui")
 local Main = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
@@ -448,15 +450,19 @@ ScanForRemotes()
 local gamemeta = getrawmetatable(game)
 local gamemeta_namecall = gamemeta.__namecall
 
-hookmetamethod(game, "__namecall", function(instance, ...)
+setreadonly(gamemeta, false)
+
+local on_namecall = function(instance, ...)
 	local method: string = getnamecallmethod()
-	
+
 	if method:lower():match("server") then
 		CaptureRemote(instance)
 		LogRemote(instance, false, ...)
 	end
-	
+
 	return gamemeta_namecall(instance, ...)
-end)
+end
+
+gamemeta.__namecall = on_namecall
 
 return RemoteSpy
