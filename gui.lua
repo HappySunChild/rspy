@@ -212,6 +212,11 @@ local blocked = {}
 local selectedRemote = 1
 local currentSource = ""
 
+local gamemeta = getrawmetatable(game)
+local gamemeta_namecall = gamemeta.__namecall
+
+setreadonly(gamemeta, false)
+
 local logIncoming = false
 
 local function GetTextBounds(text)
@@ -437,11 +442,6 @@ if not getgenv().RemoteSpyLoaded then
 			LogRemote(remote.Remote, false, unpack(remote.Arguments))
 		end
 	end)
-
-	local gamemeta = getrawmetatable(game)
-	local gamemeta_namecall = gamemeta.__namecall
-
-	setreadonly(gamemeta, false)
 
 	local on_namecall = function(instance, ...)
 		local method = getnamecallmethod()
