@@ -495,6 +495,26 @@ local function LogRemote(remote, fromServer, args)
 	RemoteScroll.CanvasSize = UDim2.new(0, 0, 0, List.AbsoluteContentSize.Y + 6)
 end
 
+local function CaptureRemote(remote)
+	if not scanned[remote] then
+		scanned[remote] = true
+
+		if remote.ClassName:lower() == "remoteevent" then
+			Connect(remote.OnClientEvent, function(...)
+				if not blocked[remote] then
+					LogRemote(remote, true, {...})
+				end
+			end)
+		elseif remote.ClassName:lower() == "remotefunction" then
+			remote.OnClientInvoke = function(...)
+				if not blocked[remote] then
+					LogRemote(remote, true, {...})
+				end
+			end
+		end
+	end
+end
+
 local function AddButton(name, callback)
 	local button = Instance.new("TextButton")
 	button.Parent = Buttons
@@ -514,23 +534,7 @@ end
 
 local function Scan()
 	for i, remote in pairs(game:GetDescendants()) do
-		if not scanned[remote] then
-			scanned[remote] = true
-
-			if remote.ClassName:lower() == "remoteevent" then
-				Connect(remote.OnClientEvent, function(...)
-					if not blocked[remote] then
-						LogRemote(remote, true, {...})
-					end
-				end)
-			elseif remote.ClassName:lower() == "remotefunction" then
-				remote.OnClientInvoke = function(...)
-					if not blocked[remote] then
-						LogRemote(remote, true, {...})
-					end
-				end
-			end
-		end
+		CaptureRemote(remote)
 	end
 end
 
@@ -554,6 +558,10 @@ Connect(RunService.Stepped, function()
 
 		LogRemote(remote.Instance, false, remote.Arguments) -- all remotes in queue are automatically from the client
 	end
+end)
+
+AddButton("Remote Scan", function()
+	Scan()
 end)
 
 AddButton("Clear Log", function()
@@ -659,6 +667,12 @@ Connect(ShowButton.MouseButton1Click, function()
 		blocked[currentRemote] = nil
 
 		SelectRemote(nil)
+	end
+end)
+
+Connect(game.DescendantAdded, function(child)
+	if child.ClassName:lower() == "remoteevent" or child.ClassName:lower() == "remotefunction" then
+		CaptureRemote(child)
 	end
 end)
 
