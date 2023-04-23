@@ -258,7 +258,7 @@ types = {
 				return "nil"
 			end
 
-			table.insert(path, tostring(cur.Name))
+			table.insert(path, tostring(cur.ClassName))
 			cur = cur.Parent
 		end
 
@@ -558,10 +558,6 @@ Connect(RunService.Stepped, function()
 
 		LogRemote(remote.Instance, false, remote.Arguments) -- all remotes in queue are automatically from the client
 	end
-end)
-
-AddButton("Remote Scan", function()
-	Scan()
 end)
 
 AddButton("Clear Log", function()
