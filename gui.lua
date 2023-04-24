@@ -258,14 +258,14 @@ types = {
 				return "nil"
 			end
 
-			table.insert(path, tostring(cur.ClassName))
+			table.insert(path, cur)
 			cur = cur.Parent
 		end
 
-		local str = string.format("game:GetService(\"%s\")", path[#path])
+		local str = string.format("game:GetService(\"%s\")", path[#path].ClassName)
 
 		for i = #path - 1, 1, -1 do
-			str = str .. string.format(HasSpecial(path[i]) and "[\"%s\"]" or ".%s", path[i])
+			str = str .. string.format(HasSpecial(path[i].Name) and "[\"%s\"]" or ".%s", path[i].Name)
 		end
 
 		return str
@@ -318,7 +318,9 @@ local highlight = loadstring(game:HttpGet("https://raw.githubusercontent.com/Hap
 local queue = {}
 local scanned = {}
 local blocked = {}
+local logged = {}
 
+local currentIndex = 1
 local currentSource = ""
 local currentRemote = nil
 
@@ -352,9 +354,10 @@ local function GetSource(remote, args, incoming)
 	local function getVars(value, index)
 		return string.format("v%d", index)
 	end
-
 	-- the actual generation of the source
-	return string.format(" -- script generated automagically\n -- (%s)\n \n%s\nlocal remote = %s\n \nremote:%s(%s)", incoming and "Server -> Client" or "Client -> Server", Concat(args, "\n", varGenerate), ToScript(remote), GetMethod(remote, not incoming), Concat(args, ", ", getVars))
+	local source = string.format(" -- script generated automagically\n -- (%s)\n \n%s\nlocal remote = %s\n \nremote:%s(%s)", incoming and "Server -> Client" or "Client -> Server", Concat(args, "\n", varGenerate), ToScript(remote), GetMethod(remote, not incoming), Concat(args, ", ", getVars))
+
+	return source
 end
 
 local function Display(source)
@@ -442,6 +445,7 @@ local function LogRemote(remote, fromServer, args)
 	end
 
 	local source = GetSource(remote, args, fromServer)
+	local index = #logged + 1
 
 	local RemoteItem = Instance.new("Frame", RemoteScroll)
 	local Image = Instance.new("ImageLabel")
@@ -479,20 +483,36 @@ local function LogRemote(remote, fromServer, args)
 	Index.Position = UDim2.new(1, 0, 0, 0)
 	Index.Size = UDim2.new(0, 25, 1, 0)
 	Index.Font = Enum.Font.SourceSans
-	Index.Text = tostring(#RemoteScroll:GetChildren() - 2)
+	Index.Text = tostring(index)
 	Index.TextColor3 = Color3.fromRGB(238, 238, 238)
 	Index.TextSize = 14.000
 	
-	Button.MouseButton1Click:Connect(function()
+	RemoteScroll.CanvasSize = UDim2.new(0, 0, 0, List.AbsoluteContentSize.Y + 6)
+
+	local ret = string.format("-- %s is not a RemoteFunction!", remote.Name)
+
+	if remote.ClassName:lower() == "remotefunction" then
+		local rfreturn = {select(2, pcall(remote.InvokeServer, remote, unpack(args)))}
+		
+		source = source ..  string.format("\n \n -- remote function return: \n local freturn = %s", ToScript(rfreturn))
+	end
+
+	logged[index] = {
+		fret = ret,
+		source = source,
+		remote = remote,
+		args = args
+	}
+
+	Connect(Button.MouseButton1Click, function()
 		SetTitleStatus(string.format("Viewing %s @ %s # %s", remote.Name, Index.Text, fromServer and "From Server" or "To Server"))
 
+		currentIndex = index
 		currentSource = source
 		SelectRemote(remote)
 
 		Display(source)
 	end)
-	
-	RemoteScroll.CanvasSize = UDim2.new(0, 0, 0, List.AbsoluteContentSize.Y + 6)
 end
 
 local function CaptureRemote(remote)
@@ -539,7 +559,11 @@ local function Scan()
 end
 
 old = hookmetamethod(game, "__namecall", newcclosure(function(instance: Instance, ...)
-	if instance.ClassName:lower() == "remoteevent" or instance.ClassName:lower() == "remotefunction" then
+	local method = getnamecallmethod():lower()
+
+	local a = "a"
+
+	if (instance.ClassName:lower() == "remoteevent" or instance.ClassName:lower() == "remotefunction") and (method == "invokeserver" or method == "fireserver") then
 		if not blocked[instance] then
 			table.insert(queue, {Instance = instance, Arguments = {...}})
 		end
@@ -547,10 +571,10 @@ old = hookmetamethod(game, "__namecall", newcclosure(function(instance: Instance
 
 	return (_G.RSpyOldNamecall or old)(instance, ...)
 end))
---[[
+--
 if not _G.RSpyOldNamecall then -- allows multiple calls but may mess up any other scripts this is ran with (mainly testing purposes)
 	_G.RSpyOldNamecall = old
-end]]
+end--]]
 
 Connect(RunService.Stepped, function()
 	while #queue > 0 do
@@ -566,6 +590,8 @@ AddButton("Clear Log", function()
 			v:Destroy()
 		end
 	end
+	
+	logged = {}
 
 	ClearSource()
 
