@@ -262,7 +262,7 @@ types = {
 			cur = cur.Parent
 		end
 
-		local str = string.format("game:GetService(\"%s\")", path[#path].ClassName)
+		local str = string.format("game:GetService(\"%s\")", (path[#path]).ClassName)
 
 		for i = #path - 1, 1, -1 do
 			str = str .. string.format(HasSpecial(path[i].Name) and "[\"%s\"]" or ".%s", path[i].Name)
@@ -319,6 +319,7 @@ local queue = {}
 local scanned = {}
 local blocked = {}
 local logged = {}
+local calls = {}
 
 local currentIndex = 1
 local currentSource = ""
@@ -410,7 +411,7 @@ local function Display(source)
 		Index.TextWrapped = false
 		Index.TextXAlignment = Enum.TextXAlignment.Left
 		
-		local text, cs = highlight:GetHighlight(lineContent, carryString)
+		local text, cs = highlight:getHighlight(lineContent, carryString)
 		LineText.Text = text
 		
 		carryString = cs
@@ -435,7 +436,7 @@ local function ClearSource()
 	SetTitleStatus()
 end
 
-local function LogRemote(remote, fromServer, args)
+local function LogRemote(remote, fromServer, args, script)
 	if fromServer and catchIncoming == false then
 		return
 	end
@@ -501,7 +502,8 @@ local function LogRemote(remote, fromServer, args)
 		fret = ret,
 		source = source,
 		remote = remote,
-		args = args
+		args = args,
+		script = script
 	}
 
 	Connect(Button.MouseButton1Click, function()
@@ -561,27 +563,36 @@ end
 old = hookmetamethod(game, "__namecall", newcclosure(function(instance: Instance, ...)
 	local method = getnamecallmethod():lower()
 
-	local a = "a"
-
 	if (instance.ClassName:lower() == "remoteevent" or instance.ClassName:lower() == "remotefunction") and (method == "invokeserver" or method == "fireserver") then
 		if not blocked[instance] then
-			table.insert(queue, {Instance = instance, Arguments = {...}})
+			table.insert(queue, {Instance = instance, Arguments = {...}, Script = getcallingscript()})
 		end
 	end
+	
+	if not calls[method] then
+		calls[method] = {}
+	end
 
-	return (_G.RSpyOldNamecall or old)(instance, ...)
+	local r = {(_G.RSpyOldNamecall or old)(instance, ...)}
+
+	table.insert(calls[method], {returned = r, instance = instance, method = method, args = {...}})
+
+	return unpack(r)
 end))
+
 --
 if not _G.RSpyOldNamecall then -- allows multiple calls but may mess up any other scripts this is ran with (mainly testing purposes)
 	_G.RSpyOldNamecall = old
 end--]]
 
-Connect(RunService.Stepped, function()
+Connect(RunService.Stepped, function(time, dt)
 	while #queue > 0 do
 		local remote = table.remove(queue, 1)
 
-		LogRemote(remote.Instance, false, remote.Arguments) -- all remotes in queue are automatically from the client
+		LogRemote(remote.Instance, false, remote.Arguments, remote.Script) -- all remotes in queue are automatically from the client
 	end
+
+	table.clear(calls)
 end)
 
 AddButton("Clear Log", function()
@@ -623,6 +634,12 @@ AddButton("Copy Source", function()
 	setclipboard(currentSource)
 end)
 
+AddButton("Copy Remote", function()
+	if currentRemote then
+		setclipboard(ToScript(currentRemote))
+	end
+end)
+
 local button
 button = AddButton("Catch Incoming", function()
 	catchIncoming = not catchIncoming
@@ -630,6 +647,25 @@ button = AddButton("Catch Incoming", function()
 	button.TextColor3 = catchIncoming and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
 end)
 button.TextColor3 = Color3.new(1, 0, 0)
+
+AddButton("Decompile", function()
+	if currentRemote then
+		local caller = logged[currentIndex].script
+
+		if caller then
+			local scriptSource = decompile(caller)
+			scriptSource = " -- Decompiled Script Source --\n \n" .. scriptSource
+
+			currentSource = scriptSource
+
+			Display(scriptSource)
+
+			SetTitleStatus(string.format("Viewing decompiled script: %s @ %d # %s", caller.Name, currentIndex, currentRemote.Name))
+		else
+			Display(" -- Unable to decompile; Missing script.")
+		end
+	end
+end)
 
 Connect(HiddenButton.MouseButton1Click, function()
 	hiddenOpen = not hiddenOpen
